@@ -69,8 +69,8 @@ int main(int argc, char** argv)
 //	int i = euclid(12, 18);
 
 //	fprintf(stdout, "i = %u\n", i);
-        uint32_t n, p;
-	uint64_t q, z, e, d;
+        uint32_t p, q;
+	uint64_t n, z, e, d;
 	uint64_t min, max;
 //	int public[], private[];
 
