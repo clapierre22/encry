@@ -58,7 +58,7 @@ uint32_t gen_d(uint32_t i)
 	return 0;
 }
 
-void gen_ed(uint32_t e, uint32_t d)
+void gen_ed(void)
 {
 	int k = 0;
 
@@ -130,6 +130,9 @@ int main(int argc, char** argv)
 	fprintf(stdout, "p: %u, q: %u, n: %u, z: %u\n", p, q, n, z);
 
 	// gen e, d
+	gen_ed();
+
+	fprintf(stdout, "e: %u, d: %u\n", e, d);
 
 	encrypt(msg);
 
