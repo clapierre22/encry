@@ -15,6 +15,12 @@ uint32_t p, q;
 uint64_t n, e, d, z;
 char msg[MSG_MAX];
 
+/*
+ * prime(uint32_t integer);
+ * Function to Dertermine if a uint32 is prime
+ * P: uint32_t x
+ * R: 0 if not prime, 1 if prime
+ */
 int prime(uint32_t x)
 {
 	int i, j;
@@ -45,31 +51,75 @@ int euclid(uint64_t a, uint64_t b)
 	return 0;
 }
 
-uint32_t gen_d(uint32_t i)
+/*
+ * gen_d(uint32_t e value);
+ * Function that takes the generated e value, and generates a
+ * valid d value
+ * P: uint32_t gen_e
+ * R: uint32_t gen_d
+ */
+uint32_t gen_d(uint32_t gen_e)
 {
+	/* Since ed mod z = 1, the generated d value needs to be
+	 * at least one greater than z. 
+	 * If the temp value is exactly divisible by the generated
+	 * e value, then the temp value divided by e will be d.
+	 * If not true, then increment the temp value by z until
+	 * a valid d value is found
+	 * z = ed - 1, ed % z = 1
+	 * d = (z + 1) / e, (d + z) % e = 0
+	 */
+
 	uint32_t temp = 1;
 	
 	while (1)
 	{
+		/* Increment temp by z */
 		temp = temp + z;
-		if (temp % i == 0) return (temp / i);
+
+		/* If temp is divisible by e, return the quotient */
+		if (temp % gen_e == 0 && (temp / gen_e) != gen_e) 
+			return (temp / gen_e);
 	}
 
 	return 0;
 }
 
+/*
+ * gen_ed(void)
+ * Function that generates the e value, initializes the generation
+ * of the d value. Both values are global variables
+ * P: void
+ * R: void
+ */
 void gen_ed(void)
 {
+	/*
+	 * Since z = ed - 1, ed % z = 1; There needs to be two seperate
+	 * values that divide z, so e must be a prime number that is 
+	 * less than z, does not divide z exactly
+	 * After generating e, generate d
+	 */
+
 	int k = 0;
 
+	/* 1 < e < z */
 	for (int i = 2; i < z; i++)
 	{
+		if (i >= n)
+		{
+			fprintf(stderr, "[Error] e value must be less than n value\n e: %u, n: %u\n", i, n);
+			break;
+		}
+		/* e cannot exactly divide z, need e, d */
 		if (z % i == 0) continue;
 
 		uint32_t temp;
 
+		/* e must be prime, not equal to p, q */
 		if (prime(i) && i != p && i != q)
 		{
+			/* Generate d */
 			e = i;
 			temp = gen_d(e);
 
@@ -80,6 +130,8 @@ void gen_ed(void)
 			}
 		}
 	}
+
+	// TODO: Add error handling, specifically if e >= n
 }
 
 void encrypt(char* msg)
