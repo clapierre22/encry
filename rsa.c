@@ -7,13 +7,10 @@
 
 #define MSG_MAX 100
 
-// p: 19, q: 7, n: 133, z: 108
-
 /* Global Variables */
 
 uint32_t p, q;
 uint64_t n, e, d, z;
-char msg[MSG_MAX];
 
 /*
  * prime(uint32_t integer);
@@ -134,19 +131,56 @@ void gen_ed(void)
 	// TODO: Add error handling, specifically if e >= n
 }
 
-void encrypt(char* msg)
+/*
+ * bem()
+ * Base, Exponent, Mod
+ */
+uint32_t bem(uint32_t b, uint32_t ex, uint32_t m)
 {
-	int i = 0;
-	uint32_t len = strlen(msg);
+	uint32_t x = 1, y = b;
 
-	//while (i != len)
-	//{
-		
-	//}
+	while (ex > 0)
+	{
+		if (ex % 2 == 1) x = (x * y) % m;
+		y = (y * y) % m;
+		ex /= 2;
+	}
+#ifdef DEBUG
+	fprintf(stdout, "x: %u, y: %u, m: %u, ex: %u, rslt: %u\n",
+			x, y, m, ex, x % m);
+#endif
+	return x % m;
 }
 
-void decrypt(char* msg)
+char* encrypt(char* msg)
 {
+	uint32_t len = strlen(msg);
+	char* c = (char*)malloc(len * sizeof(char));
+	int cmsg;
+
+	for (int i = 0; i < len; i++)
+	{
+		c[i] = bem(msg[i], e, n);
+		fprintf(stdout, "%c -> %c\n", msg[i], c[i]);
+	}
+
+	return c;
+}
+
+char* decrypt(char* msg)
+{
+	uint32_t len = strlen(msg);
+	int cmsg;
+
+	char* m = (char*)malloc(len * sizeof(char));
+
+	for (int i = 0; i < len; i++)
+	{
+		m[i] = bem(msg[i], d, n);
+		fprintf(stdout, "%c -> %c\n", msg[i], m[i]);
+	}
+
+	return m;
 }
 
 int main(int argc, char** argv)
@@ -158,6 +192,8 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Usage: ./[exe] [p] [q] [msg]\n");
 		exit(1);
 	}
+
+	char* msg = (char*)malloc(MSG_MAX * sizeof(char));
 
 	p = atoi(argv[1]);
 	q = atoi(argv[2]);
@@ -181,18 +217,20 @@ int main(int argc, char** argv)
 
 	fprintf(stdout, "p: %u, q: %u, n: %u, z: %u\n", p, q, n, z);
 
-	// gen e, d
 	gen_ed();
 
 	fprintf(stdout, "e: %u, d: %u\n", e, d);
 
-	encrypt(msg);
+	fprintf(stdout, "Public Key: (%u, %u)\nPrivate Key: (%u, %u)\n",
+			n, e, n, d);
 
-	fprintf(stdout, "Encrypted Msg: %s\n", msg);
+	char* enc = encrypt(msg);
 
-	decrypt(msg);
+	fprintf(stdout, "\nEncrypted Msg: %s\n", enc);
 
-	fprintf(stdout, "Decrypted Msg: %s\n", msg);
+	char* dec = decrypt(enc);
+
+	fprintf(stdout, "\nDecrypted Msg: %s\n", dec);
 
 	return 0;
 }
