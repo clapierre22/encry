@@ -132,8 +132,10 @@ void gen_ed(void)
 }
 
 /*
- * bem()
- * Base, Exponent, Mod
+ * bem(long b, long ex, long m)
+ * Base, Exponent, Mod; Calculates the b^ex % m formula
+ * P: uint32_t base, uint32_t exponent, uint32_t modulo
+ * R: uint32_t result
  */
 uint32_t bem(uint32_t b, uint32_t ex, uint32_t m)
 {
@@ -152,37 +154,58 @@ uint32_t bem(uint32_t b, uint32_t ex, uint32_t m)
 	return x % m;
 }
 
+/*
+ * encrypt(char* msg)
+ * Encrypts the given msg utilizing the global variables and the bem function
+ * P: char* message
+ * R: char* cyphertext
+ */
 char* encrypt(char* msg)
 {
 	uint32_t len = strlen(msg);
 	char* c = (char*)malloc(len * sizeof(char));
-	int cmsg;
 
 	for (int i = 0; i < len; i++)
 	{
+//		if (c[i] == '\0') return c;
 		c[i] = bem(msg[i], e, n);
 		fprintf(stdout, "%c -> %c\n", msg[i], c[i]);
 	}
 
+	c[len] = '\0';
+
 	return c;
 }
 
+/*
+ * decrypt(char* msg)
+ * Decrypts the given cyphertext utilizing the global variables and the bem function
+ * P: char* cyphertext
+ * R: char* decoded message
+ */
 char* decrypt(char* msg)
 {
+	// PROBLEM:
+	// Calling this function and printing the rslt shows extra characters that are not present in the encrypted msg
 	uint32_t len = strlen(msg);
-	int cmsg;
 
 	char* m = (char*)malloc(len * sizeof(char));
 
 	for (int i = 0; i < len; i++)
 	{
+//		if (m[i] == '\0') return m;
 		m[i] = bem(msg[i], d, n);
 		fprintf(stdout, "%c -> %c\n", msg[i], m[i]);
 	}
 
+	m[len] = '\0';
+
 	return m;
 }
 
+/*
+ * Main Loop
+ */
 int main(int argc, char** argv)
 {
 	fprintf(stdout, "Good Build\n");
@@ -226,11 +249,11 @@ int main(int argc, char** argv)
 
 	char* enc = encrypt(msg);
 
-	fprintf(stdout, "\nEncrypted Msg: %s\n", enc);
+	fprintf(stdout, "\nEncrypted Msg: %s (%d)\n", enc, enc);
 
 	char* dec = decrypt(enc);
 
-	fprintf(stdout, "\nDecrypted Msg: %s\n", dec);
+	fprintf(stdout, "\nDecrypted Msg: %s (%d)\n", dec, dec);
 
 	return 0;
 }
