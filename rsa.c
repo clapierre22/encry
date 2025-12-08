@@ -107,11 +107,6 @@ void gen_ed(void)
 	 * After generating e, generate d
 	 */
 
-	// I thiink k is the right idea, but it needs to be closer to the generated d value
-//	int k = 0;
-
-//	k = (p < q) ? p : q;
-
 	/* 1 < e < z */
 	for (int i = 2; i < z; i++)
 	{
@@ -155,8 +150,6 @@ void gen_ed(void)
  */
 uint32_t bem(uint64_t b, uint64_t ex, uint64_t m)
 {
-//	uint64_t x = 1, y = b;
-
 	uint64_t r = 1;
 	uint64_t i = 1;
 	uint64_t base = b;
@@ -164,19 +157,14 @@ uint32_t bem(uint64_t b, uint64_t ex, uint64_t m)
 
 	while (ex > 0)
 	{
-	//	if (ex % 2 == 1) x = (x * y) % m;
 		if (ex & 1) r = (r * i * b) % m;
-	//	y = (y * y) % m;
 		b = (b * i * b) % m;
 		ex /= 2;
 	}
 #ifdef DEBUG
-//	fprintf(stdout, "x: %u, y: %u, m: %u, ex: %u, rslt: %u\n",
-//			x, y, m, ex, x % m);
 	fprintf(stdout, "base: %u, r: %u, b: %u, ex: %u, m: %u\n",
 			base, r, b, ex, m);
 #endif
-//	return x % m;
 	return r;
 }
 
@@ -189,16 +177,11 @@ uint32_t bem(uint64_t b, uint64_t ex, uint64_t m)
 uint64_t* encrypt(char* msg)
 { // TODO: Change from char* to uint64_t*
 	uint64_t len = strlen(msg);
-//	char* c = (char*)malloc(len * sizeof(char));
 	uint64_t* c = (uint64_t*)malloc(len * sizeof(uint64_t));
-
-//	int temp;
 
 	for (int i = 0; i < len; i++)
 	{
-//		temp = (int)msg[i] - 96;
-//		c[i] = bem(temp, e, n);
-		c[i] = bem(msg[i], e, n); // REMOVE IMPLICIT IT CUTS OFF DIGITS
+		c[i] = bem(msg[i], e, n); 
 		fprintf(stdout, "%c -> %c\n", msg[i], c[i]);
 	}
 
@@ -215,25 +198,16 @@ uint64_t* encrypt(char* msg)
  */
 char* decrypt(uint64_t* msg)
 {
-	// PROBLEM:
-	// Calling this function and printing the rslt shows extra characters that are not present in the encrypted msg
-//	uint64_t len = strlen(msg);
-
 	char* m = (char*)malloc(MSG_MAX * sizeof(char));
-
-//	int temp;
 	int i = 0;
-	//for (int i = 0; i < len; i++)
+
 	while (msg[i] != 0)
 	{
-//		temp = (int)msg[i] + 96;
-//		m[i] = bem(temp, d, n);
 		m[i] = bem(msg[i], d, n);
 		fprintf(stdout, "%c -> %c\n", msg[i], m[i]);
 		i++;
 	}
 
-//	m[len] = '\0';
 	m[i] = '\0';
 	return m;
 }
@@ -271,7 +245,8 @@ int main(int argc, char** argv)
 	}
 
 	fprintf(stdout, "Message to encrypt/decrypt: %s (%d)\n", msg, msg);
-
+	// PROBLEM HERE
+	// when multiplying two 1024-bit ints, rslt is 2048 bits
 	n = p * q;
 	z = (p - 1) * (q - 1);
 
