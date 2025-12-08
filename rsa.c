@@ -6,10 +6,16 @@
 #include <stdint.h>
 
 #define MSG_MAX 100
+#define DEBUG
+
+typedef struct
+{
+	uint32_t chunk[32];
+} uint1024_t;
 
 /* Global Variables */
 
-uint32_t p, q;
+uint64_t p, q;
 uint64_t n, e, d, z;
 
 /*
@@ -18,7 +24,7 @@ uint64_t n, e, d, z;
  * P: uint32_t x
  * R: 0 if not prime, 1 if prime
  */
-int prime(uint32_t x)
+int prime(uint64_t x)
 {
 	int i, j;
 
@@ -29,6 +35,9 @@ int prime(uint32_t x)
 	return 1;
 }
 
+/*
+ * Not used
+ */
 int euclid(uint64_t a, uint64_t b)
 {
 	uint64_t large, small;
@@ -55,7 +64,7 @@ int euclid(uint64_t a, uint64_t b)
  * P: uint32_t gen_e
  * R: uint32_t gen_d
  */
-uint32_t gen_d(uint32_t gen_e)
+uint64_t gen_d(uint64_t gen_e)
 {
 	/* Since ed mod z = 1, the generated d value needs to be
 	 * at least one greater than z. 
@@ -67,7 +76,7 @@ uint32_t gen_d(uint32_t gen_e)
 	 * d = (z + 1) / e, (d + z) % e = 0
 	 */
 
-	uint32_t temp = 1;
+	uint64_t temp = 1;
 	
 	while (1)
 	{
@@ -98,7 +107,10 @@ void gen_ed(void)
 	 * After generating e, generate d
 	 */
 
-	int k = 0;
+	// I thiink k is the right idea, but it needs to be closer to the generated d value
+//	int k = 0;
+
+//	k = (p < q) ? p : q;
 
 	/* 1 < e < z */
 	for (int i = 2; i < z; i++)
@@ -111,7 +123,7 @@ void gen_ed(void)
 		/* e cannot exactly divide z, need e, d */
 		if (z % i == 0) continue;
 
-		uint32_t temp;
+		uint64_t temp;
 
 		/* e must be prime, not equal to p, q */
 		if (prime(i) && i != p && i != q)
@@ -128,7 +140,11 @@ void gen_ed(void)
 		}
 	}
 
-	// TODO: Add error handling, specifically if e >= n
+	if (!e || !d)
+	{
+		fprintf(stderr, "[Error] Could not generate e, d values\n");
+		// Exit?
+	}
 }
 
 /*
@@ -137,21 +153,31 @@ void gen_ed(void)
  * P: uint32_t base, uint32_t exponent, uint32_t modulo
  * R: uint32_t result
  */
-uint32_t bem(uint32_t b, uint32_t ex, uint32_t m)
+uint32_t bem(uint64_t b, uint64_t ex, uint64_t m)
 {
-	uint32_t x = 1, y = b;
+//	uint64_t x = 1, y = b;
+
+	uint64_t r = 1;
+	uint64_t i = 1;
+	uint64_t base = b;
+	b = b % m;
 
 	while (ex > 0)
 	{
-		if (ex % 2 == 1) x = (x * y) % m;
-		y = (y * y) % m;
+	//	if (ex % 2 == 1) x = (x * y) % m;
+		if (ex & 1) r = (r * i * b) % m;
+	//	y = (y * y) % m;
+		b = (b * i * b) % m;
 		ex /= 2;
 	}
 #ifdef DEBUG
-	fprintf(stdout, "x: %u, y: %u, m: %u, ex: %u, rslt: %u\n",
-			x, y, m, ex, x % m);
+//	fprintf(stdout, "x: %u, y: %u, m: %u, ex: %u, rslt: %u\n",
+//			x, y, m, ex, x % m);
+	fprintf(stdout, "base: %u, r: %u, b: %u, ex: %u, m: %u\n",
+			base, r, b, ex, m);
 #endif
-	return x % m;
+//	return x % m;
+	return r;
 }
 
 /*
@@ -160,15 +186,19 @@ uint32_t bem(uint32_t b, uint32_t ex, uint32_t m)
  * P: char* message
  * R: char* cyphertext
  */
-char* encrypt(char* msg)
-{
-	uint32_t len = strlen(msg);
-	char* c = (char*)malloc(len * sizeof(char));
+uint64_t* encrypt(char* msg)
+{ // TODO: Change from char* to uint64_t*
+	uint64_t len = strlen(msg);
+//	char* c = (char*)malloc(len * sizeof(char));
+	uint64_t* c = (uint64_t*)malloc(len * sizeof(uint64_t));
+
+//	int temp;
 
 	for (int i = 0; i < len; i++)
 	{
-//		if (c[i] == '\0') return c;
-		c[i] = bem(msg[i], e, n);
+//		temp = (int)msg[i] - 96;
+//		c[i] = bem(temp, e, n);
+		c[i] = bem(msg[i], e, n); // REMOVE IMPLICIT IT CUTS OFF DIGITS
 		fprintf(stdout, "%c -> %c\n", msg[i], c[i]);
 	}
 
@@ -183,23 +213,28 @@ char* encrypt(char* msg)
  * P: char* cyphertext
  * R: char* decoded message
  */
-char* decrypt(char* msg)
+char* decrypt(uint64_t* msg)
 {
 	// PROBLEM:
 	// Calling this function and printing the rslt shows extra characters that are not present in the encrypted msg
-	uint32_t len = strlen(msg);
+//	uint64_t len = strlen(msg);
 
-	char* m = (char*)malloc(len * sizeof(char));
+	char* m = (char*)malloc(MSG_MAX * sizeof(char));
 
-	for (int i = 0; i < len; i++)
+//	int temp;
+	int i = 0;
+	//for (int i = 0; i < len; i++)
+	while (msg[i] != 0)
 	{
-//		if (m[i] == '\0') return m;
+//		temp = (int)msg[i] + 96;
+//		m[i] = bem(temp, d, n);
 		m[i] = bem(msg[i], d, n);
 		fprintf(stdout, "%c -> %c\n", msg[i], m[i]);
+		i++;
 	}
 
-	m[len] = '\0';
-
+//	m[len] = '\0';
+	m[i] = '\0';
 	return m;
 }
 
@@ -235,6 +270,8 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 
+	fprintf(stdout, "Message to encrypt/decrypt: %s (%d)\n", msg, msg);
+
 	n = p * q;
 	z = (p - 1) * (q - 1);
 
@@ -247,13 +284,15 @@ int main(int argc, char** argv)
 	fprintf(stdout, "Public Key: (%u, %u)\nPrivate Key: (%u, %u)\n",
 			n, e, n, d);
 
-	char* enc = encrypt(msg);
+	uint64_t* enc = encrypt(msg);
 
-	fprintf(stdout, "\nEncrypted Msg: %s (%d)\n", enc, enc);
+	fprintf(stdout, "\n\nEncrypted Msg: %s (%d)\n\n", enc, enc);
+
+	fflush(stdout);
 
 	char* dec = decrypt(enc);
 
-	fprintf(stdout, "\nDecrypted Msg: %s (%d)\n", dec, dec);
+	fprintf(stdout, "\n\nDecrypted Msg: %s (%d)\n\n", dec, dec);
 
 	return 0;
 }
